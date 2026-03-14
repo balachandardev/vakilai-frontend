@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>VakilAI — Legal Documents Simplified</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --gold:#C9A84C; --gold-light:#E8C97A; --gold-dim:#7A6030;
+      --ink:#0D0D0F; --ink-2:#16161A; --ink-3:#1E1E24; --ink-4:#2A2A33;
+      --parchment:#F5F0E8; --parchment-dim:#D8D0C0; --muted:#8A8A9A;
+      --danger:#E05050; --warning:#D4922A; --safe:#4A9E6E;
+      --danger-bg:rgba(224,80,80,0.08); --warning-bg:rgba(212,146,42,0.08); --safe-bg:rgba(74,158,110,0.08);
+      --radius:12px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--ink);color:var(--parchment);min-height:100vh;overflow-x:hidden;}
+    body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(201,168,76,0.07) 0%,transparent 60%),url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23C9A84C' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none;z-index:0;}
+
+    /* ── PAGES ── */
+    .page{display:none;position:relative;z-index:1;min-height:100vh;}
+    .page.active{display:block;}
+
+    /* ── SHARED ── */
+    .container{max-width:860px;margin:0 auto;padding:0 24px;}
+    .card{background:var(--ink-2);border:1px solid rgba(201,168,76,0.18);border-radius:16px;overflow:hidden;margin-bottom:24px;}
+    .card-header{padding:20px 28px;border-bottom:1px solid rgba(201,168,76,0.1);display:flex;align-items:center;gap:12px;}
+    .card-icon{width:36px;height:36px;border-radius:8px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;}
+    .card-header h2{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;}
+    .card-header p{font-size:13px;color:var(--muted);margin-top:1px;}
+    .card-body{padding:28px;}
+    .gold{color:var(--gold);}
+    .hidden{display:none!important;}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .anim{animation:fadeUp 0.5s ease both;}
+
+    /* ── NAV ── */
+    nav{padding:18px 0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(201,168,76,0.12);}
+    .logo{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--gold);cursor:pointer;}
+    .logo span{color:var(--parchment);font-weight:400;}
+    .nav-right{display:flex;align-items:center;gap:12px;}
+    .nav-user{font-size:13px;color:var(--muted);}
+    .nav-user strong{color:var(--parchment);}
+    .plan-badge{font-size:11px;padding:3px 9px;border-radius:12px;border:1px solid;letter-spacing:0.04em;text-transform:uppercase;}
+    .plan-badge.free{border-color:rgba(201,168,76,0.3);color:var(--gold-dim);}
+    .plan-badge.monthly{border-color:rgba(74,158,110,0.4);color:var(--safe);}
+    .plan-badge.paid_single{border-color:rgba(201,168,76,0.4);color:var(--gold);}
+    .btn-ghost{background:none;border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:7px 14px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .15s;}
+    .btn-ghost:hover{border-color:var(--gold);color:var(--gold);}
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       AUTH PAGE
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+    .auth-box{background:var(--ink-2);border:1px solid rgba(201,168,76,0.2);border-radius:20px;padding:40px 36px;width:100%;max-width:420px;animation:fadeUp .5s ease;}
+    .auth-logo{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:600;color:var(--gold);text-align:center;margin-bottom:4px;}
+    .auth-logo span{color:var(--parchment);font-weight:400;}
+    .auth-tagline{text-align:center;font-size:13px;color:var(--muted);margin-bottom:28px;}
+    .auth-tabs{display:flex;border:1px solid rgba(201,168,76,0.15);border-radius:10px;overflow:hidden;margin-bottom:24px;}
+    .auth-tab{flex:1;padding:10px;text-align:center;font-size:14px;cursor:pointer;background:transparent;border:none;color:var(--muted);font-family:'DM Sans',sans-serif;transition:all .15s;}
+    .auth-tab.active{background:rgba(201,168,76,0.1);color:var(--gold);font-weight:500;}
+    .field{margin-bottom:16px;}
+    .field label{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:block;margin-bottom:6px;}
+    .field input{width:100%;background:var(--ink-3);border:1px solid rgba(201,168,76,0.15);border-radius:9px;padding:12px 14px;color:var(--parchment);font-family:'DM Sans',sans-serif;font-size:14px;transition:border-color .2s;}
+    .field input:focus{outline:none;border-color:var(--gold);}
+    .field input::placeholder{color:var(--muted);}
+    .auth-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold) 0%,#A8832A 100%);border:none;border-radius:10px;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--ink);cursor:pointer;transition:all .2s;margin-top:8px;}
+    .auth-btn:hover{filter:brightness(1.07);}
+    .auth-btn:disabled{opacity:.4;cursor:not-allowed;}
+    .auth-error{background:var(--danger-bg);border:1px solid rgba(224,80,80,0.25);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--danger);margin-bottom:14px;}
+    .auth-note{text-align:center;font-size:12px;color:var(--muted);margin-top:16px;}
+    .features-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:20px;}
+    .feat{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);}
+    .feat-dot{width:4px;height:4px;border-radius:50%;background:var(--gold);}
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       MAIN APP PAGE
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .hero{padding:48px 0 36px;text-align:center;animation:fadeUp .7s ease both;}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;}
+    .eyebrow::before,.eyebrow::after{content:'';width:28px;height:1px;background:var(--gold-dim);}
+    .hero h1{font-family:'Cormorant Garamond',serif;font-size:clamp(34px,6vw,56px);font-weight:600;line-height:1.1;margin-bottom:12px;}
+    .hero h1 em{font-style:italic;color:var(--gold);}
+    .hero p{font-size:15px;color:var(--muted);max-width:440px;margin:0 auto;line-height:1.7;font-weight:300;}
+
+    /* Usage bar */
+    .usage-bar{display:flex;align-items:center;justify-content:space-between;background:var(--ink-3);border:1px solid rgba(201,168,76,0.12);border-radius:10px;padding:11px 16px;margin-bottom:16px;}
+    .usage-dots{display:flex;gap:5px;}
+    .u-dot{width:9px;height:9px;border-radius:50%;background:var(--gold);}
+    .u-dot.used{background:var(--ink-4);border:1px solid rgba(201,168,76,0.15);}
+    .usage-text{font-size:13px;color:var(--muted);margin-left:10px;}
+    .usage-text strong{color:var(--gold);}
+    .upgrade-link{font-size:12px;color:var(--gold-dim);background:none;border:none;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:underline;}
+    .upgrade-link:hover{color:var(--gold);}
+
+    /* Upload zone */
+    .upload-zone{border:1.5px dashed rgba(201,168,76,0.22);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(201,168,76,0.02);position:relative;}
+    .upload-zone:hover,.upload-zone.drag{border-color:var(--gold);background:rgba(201,168,76,0.05);}
+    .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+    .upload-zone h3{font-size:15px;font-weight:500;}
+    .upload-zone p{font-size:13px;color:var(--muted);margin-top:4px;}
+    .divider{display:flex;align-items:center;gap:14px;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.07em;margin:18px 0;}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(201,168,76,0.1);}
+    textarea{width:100%;background:var(--ink-3);border:1px solid rgba(201,168,76,0.15);border-radius:10px;padding:14px;color:var(--parchment);font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.6;resize:vertical;min-height:120px;transition:border-color .2s;}
+    textarea:focus{outline:none;border-color:var(--gold);}
+    textarea::placeholder{color:var(--muted);}
+
+    /* Options */
+    .options-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px;}
+    .opt-label{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:7px;display:block;}
+    .pill-group{display:flex;gap:6px;flex-wrap:wrap;}
+    .pill{padding:5px 13px;border-radius:20px;border:1px solid rgba(201,168,76,0.18);font-size:12px;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;font-family:'DM Sans',sans-serif;}
+    .pill:hover{border-color:var(--gold);color:var(--gold);}
+    .pill.active{background:rgba(201,168,76,0.1);border-color:var(--gold);color:var(--gold-light);}
+
+    /* File chip */
+    .file-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 13px;margin-top:10px;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);border-radius:8px;font-size:13px;color:var(--gold);}
+
+    /* Analyze button */
+    .analyze-btn{width:100%;margin-top:22px;padding:15px;background:linear-gradient(135deg,var(--gold) 0%,#A8832A 100%);border:none;border-radius:10px;font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--ink);cursor:pointer;transition:all .2s;}
+    .analyze-btn:hover{filter:brightness(1.07);}
+    .analyze-btn:active{transform:scale(.99);}
+    .analyze-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+    /* Tabs */
+    .tabs{display:flex;border-bottom:1px solid rgba(201,168,76,0.1);margin-bottom:24px;}
+    .tab{padding:13px 18px;font-size:13px;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;font-family:'DM Sans',sans-serif;}
+    .tab:hover{color:var(--parchment);}
+    .tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+    .tab-content{display:none;}
+    .tab-content.active{display:block;animation:fadeUp .3s ease;}
+
+    /* Verdict */
+    .verdict{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:10px;margin-bottom:20px;border:1px solid;}
+    .verdict.safe{background:var(--safe-bg);border-color:rgba(74,158,110,.22);}
+    .verdict.risky{background:var(--warning-bg);border-color:rgba(212,146,42,.22);}
+    .verdict.danger{background:var(--danger-bg);border-color:rgba(224,80,80,.22);}
+    .v-icon{font-size:22px;flex-shrink:0;}
+    .v-title{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;}
+    .verdict.safe .v-title{color:var(--safe);}
+    .verdict.risky .v-title{color:var(--warning);}
+    .verdict.danger .v-title{color:var(--danger);}
+    .v-sub{font-size:13px;color:var(--muted);margin-top:2px;line-height:1.5;}
+
+    /* Summary */
+    .summary-card{background:var(--ink-3);border:1px solid rgba(201,168,76,0.1);border-radius:10px;padding:15px 17px;margin-bottom:11px;}
+    .summary-card h3{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--gold-light);margin-bottom:5px;}
+    .summary-card p{font-size:14px;color:var(--parchment-dim);line-height:1.65;font-weight:300;}
+
+    /* Flags */
+    .flag-item{display:flex;gap:13px;align-items:flex-start;padding:13px 15px;border-radius:10px;border:1px solid;margin-bottom:9px;}
+    .flag-item.danger{background:var(--danger-bg);border-color:rgba(224,80,80,.18);}
+    .flag-item.warning{background:var(--warning-bg);border-color:rgba(212,146,42,.18);}
+    .flag-item.safe{background:var(--safe-bg);border-color:rgba(74,158,110,.18);}
+    .flag-bar{width:3px;border-radius:2px;flex-shrink:0;align-self:stretch;min-height:28px;}
+    .flag-bar.danger{background:var(--danger);}
+    .flag-bar.warning{background:var(--warning);}
+    .flag-bar.safe{background:var(--safe);}
+    .flag-label{font-size:13px;font-weight:500;margin-bottom:3px;}
+    .flag-item.danger .flag-label{color:var(--danger);}
+    .flag-item.warning .flag-label{color:var(--warning);}
+    .flag-item.safe .flag-label{color:var(--safe);}
+    .flag-text{font-size:13px;color:var(--muted);line-height:1.55;font-weight:300;}
+
+    /* Q&A */
+    .qa-row{display:flex;gap:9px;}
+    .qa-input{flex:1;padding:11px 14px;background:var(--ink-3);border:1px solid rgba(201,168,76,0.15);border-radius:10px;color:var(--parchment);font-family:'DM Sans',sans-serif;font-size:14px;transition:border-color .2s;}
+    .qa-input:focus{outline:none;border-color:var(--gold);}
+    .qa-input::placeholder{color:var(--muted);}
+    .qa-btn{padding:11px 18px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.28);border-radius:10px;color:var(--gold);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+    .qa-btn:hover{background:rgba(201,168,76,0.18);}
+    .chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px;}
+    .chip{font-size:12px;padding:5px 11px;border-radius:20px;border:1px solid rgba(201,168,76,0.14);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+    .chip:hover{border-color:var(--gold);color:var(--gold);}
+    .qa-answers{margin-top:14px;display:flex;flex-direction:column;gap:9px;}
+    .qa-item{background:var(--ink-3);border:1px solid rgba(201,168,76,0.1);border-radius:10px;padding:13px 15px;}
+    .qa-q{font-size:11px;color:var(--gold-dim);margin-bottom:7px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;}
+    .qa-a{font-size:14px;color:var(--parchment-dim);line-height:1.65;font-weight:300;}
+
+    /* History */
+    .hist-item{display:flex;align-items:center;gap:14px;padding:13px 16px;background:var(--ink-3);border:1px solid rgba(201,168,76,0.1);border-radius:10px;margin-bottom:9px;}
+    .hist-verdict{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+    .hist-verdict.safe{background:var(--safe);}
+    .hist-verdict.risky{background:var(--warning);}
+    .hist-verdict.danger{background:var(--danger);}
+    .hist-type{font-size:14px;font-weight:500;color:var(--parchment);}
+    .hist-snippet{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px;}
+    .hist-date{font-size:12px;color:var(--muted);margin-left:auto;white-space:nowrap;}
+
+    /* Footer */
+    .card-footer{display:flex;justify-content:space-between;align-items:center;padding:14px 0 0;border-top:1px solid rgba(201,168,76,0.08);margin-top:8px;}
+    .card-footer p{font-size:12px;color:var(--muted);}
+
+    /* Loading */
+    .loading{display:flex;align-items:center;gap:11px;color:var(--muted);font-size:14px;padding:10px 0;}
+    .dots{display:flex;gap:4px;}
+    .dots span{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:pulse 1.2s ease infinite;}
+    .dots span:nth-child(2){animation-delay:.2s;}
+    .dots span:nth-child(3){animation-delay:.4s;}
+    @keyframes pulse{0%,80%,100%{transform:scale(.7);opacity:.4}40%{transform:scale(1.1);opacity:1}}
+
+    /* Section label */
+    .sec-label{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--gold-dim);margin-bottom:13px;font-weight:500;}
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       PAYWALL MODAL
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    .overlay{position:fixed;inset:0;z-index:100;background:rgba(13,13,15,.9);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .25s ease;}
+    .overlay.hidden{display:none;}
+    .paywall-box{background:var(--ink-2);border:1px solid rgba(201,168,76,.25);border-radius:20px;padding:38px 34px;max-width:460px;width:100%;text-align:center;animation:fadeUp .3s ease;}
+    .pw-icon{width:60px;height:60px;border-radius:50%;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.22);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 18px;}
+    .paywall-box h2{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;margin-bottom:8px;}
+    .paywall-box>p{font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:24px;}
+    .plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:22px;}
+    .plan-card{background:var(--ink-3);border:1px solid rgba(201,168,76,.12);border-radius:11px;padding:17px 13px;cursor:pointer;transition:all .2s;text-align:left;position:relative;}
+    .plan-card:hover{border-color:rgba(201,168,76,.3);}
+    .plan-card.sel{border-color:var(--gold);background:rgba(201,168,76,.07);}
+    .plan-card.pop::before{content:'Best value';position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--gold);color:var(--ink);font-size:10px;font-weight:500;padding:2px 9px;border-radius:10px;white-space:nowrap;}
+    .pname{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;}
+    .pprice{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;}
+    .pprice sup{font-size:13px;vertical-align:super;}
+    .pdesc{font-size:12px;color:var(--muted);margin-top:3px;}
+    .pw-features{list-style:none;text-align:left;margin-bottom:22px;}
+    .pw-features li{font-size:13px;color:var(--parchment-dim);padding:6px 0;border-bottom:1px solid rgba(201,168,76,.07);display:flex;align-items:center;gap:9px;}
+    .pw-features li:last-child{border-bottom:none;}
+    .fcheck{color:var(--safe);font-size:13px;flex-shrink:0;}
+    .pay-btn{width:100%;padding:15px;background:linear-gradient(135deg,var(--gold),#A8832A);border:none;border-radius:10px;font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--ink);cursor:pointer;transition:all .2s;margin-bottom:11px;}
+    .pay-btn:hover{filter:brightness(1.08);}
+    .pw-note{font-size:12px;color:var(--muted);}
+    .pw-note a{color:var(--gold-dim);text-decoration:underline;cursor:pointer;}
+
+    /* Toast */
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--safe);color:white;padding:11px 22px;border-radius:10px;font-size:14px;font-weight:500;z-index:200;animation:fadeUp .3s ease;}
+    .toast.hidden{display:none;}
+
+    @media(max-width:560px){
+      .options-grid{grid-template-columns:1fr;}
+      .hero h1{font-size:32px;}
+      .card-body{padding:18px;}
+      .auth-box{padding:28px 20px;}
+      .plan-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ━━━━━━━━━━━━━━ AUTH PAGE ━━━━━━━━━━━━━━ -->
+<div class="page active" id="page-auth">
+  <div class="auth-wrap">
+    <div class="auth-box">
+      <div class="auth-logo">Vakil<span>AI</span></div>
+      <div class="auth-tagline">Legal documents explained in plain language</div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuth('login')">Sign in</button>
+        <button class="auth-tab" onclick="switchAuth('register')">Create account</button>
+      </div>
+
+      <div id="auth-error" class="auth-error hidden"></div>
+
+      <!-- LOGIN FORM -->
+      <div id="form-login">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="login-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')doLogin()"/>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="login-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+        </div>
+        <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign in</button>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="form-register" class="hidden">
+        <div class="field">
+          <label>Full name</label>
+          <input type="text" id="reg-name" placeholder="Arjun Kumar"/>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="reg-email" placeholder="you@example.com"/>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="reg-pwd" placeholder="Min. 6 characters" onkeydown="if(event.key==='Enter')doRegister()"/>
+        </div>
+        <button class="auth-btn" id="reg-btn" onclick="doRegister()">Create free account</button>
+      </div>
+
+      <div class="features-row">
+        <div class="feat"><div class="feat-dot"></div>3 free analyses</div>
+        <div class="feat"><div class="feat-dot"></div>Tamil & Hindi support</div>
+        <div class="feat"><div class="feat-dot"></div>Instant results</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ━━━━━━━━━━━━━━ MAIN APP PAGE ━━━━━━━━━━━━━━ -->
+<div class="page" id="page-app">
+  <div class="container">
+
+    <!-- NAV -->
+    <nav>
+      <div class="logo" onclick="goHome()">Vakil<span>AI</span></div>
+      <div class="nav-right">
+        <span class="nav-user">Hi, <strong id="nav-name">—</strong></span>
+        <span class="plan-badge free" id="nav-plan">Free</span>
+        <button class="btn-ghost" onclick="showHistory()">History</button>
+        <button class="btn-ghost" onclick="logout()">Sign out</button>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <div class="hero">
+      <div class="eyebrow">AI-Powered Legal Assistant</div>
+      <h1>Legal documents,<br/><em>finally explained.</em></h1>
+      <p>Upload any contract or agreement — get a plain-language breakdown and red flag analysis instantly.</p>
+    </div>
+
+    <!-- INPUT CARD -->
+    <div class="card anim" id="inputCard">
+      <div class="card-header">
+        <div class="card-icon">📄</div>
+        <div>
+          <h2>Upload your document</h2>
+          <p>Rental · Offer letter · NDA · Service contract · Any legal text</p>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <!-- Usage bar -->
+        <div class="usage-bar" id="usageBar"></div>
+
+        <div class="upload-zone" id="dropZone">
+          <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt"/>
+          <svg width="38" height="38" viewBox="0 0 40 40" fill="none" style="margin:0 auto 10px;display:block;opacity:.4">
+            <rect x="7" y="4" width="20" height="28" rx="3" stroke="#C9A84C" stroke-width="1.2" fill="none"/>
+            <path d="M27 4l6 6v22a3 3 0 01-3 3H10" stroke="#C9A84C" stroke-width="1.2" fill="none"/>
+            <path d="M20 18v10M17 25l3 3 3-3" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <h3>Drop your document here</h3>
+          <p>PDF, Word, TXT — or click to browse</p>
+        </div>
+        <div id="fileChip" class="hidden"></div>
+
+        <div class="divider">or paste text</div>
+        <textarea id="docText" placeholder="Paste your legal document text here…"></textarea>
+
+        <div class="options-grid">
+          <div>
+            <span class="opt-label">Explain in</span>
+            <div class="pill-group">
+              <button class="pill active" onclick="setOpt('lang','English',this)">English</button>
+              <button class="pill" onclick="setOpt('lang','Tamil',this)">Tamil</button>
+              <button class="pill" onclick="setOpt('lang','Hindi',this)">Hindi</button>
+              <button class="pill" onclick="setOpt('lang','Telugu',this)">Telugu</button>
+            </div>
+          </div>
+          <div>
+            <span class="opt-label">Document type</span>
+            <div class="pill-group">
+              <button class="pill active" onclick="setOpt('type','auto',this)">Auto</button>
+              <button class="pill" onclick="setOpt('type','rental',this)">Rental</button>
+              <button class="pill" onclick="setOpt('type','employment',this)">Employment</button>
+              <button class="pill" onclick="setOpt('type','contract',this)">Contract</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="analyze-btn" id="analyzeBtn" onclick="analyzeDoc()">Analyse Document</button>
+      </div>
+    </div>
+
+    <!-- RESULTS CARD -->
+    <div class="card hidden anim" id="resultsCard">
+      <div class="card-header">
+        <div class="card-icon">⚖️</div>
+        <div>
+          <h2 id="docTypeLabel">Document Analysis</h2>
+          <p>Review each section carefully</p>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="tabs">
+          <button class="tab active" onclick="showTab('summary')">Summary</button>
+          <button class="tab" onclick="showTab('flags')">Red Flags</button>
+          <button class="tab" onclick="showTab('qa')">Ask Questions</button>
+        </div>
+
+        <div class="tab-content active" id="tab-summary">
+          <div id="verdictBox"></div>
+          <div class="sec-label">Plain language breakdown</div>
+          <div id="summaryContent"></div>
+        </div>
+
+        <div class="tab-content" id="tab-flags">
+          <div class="sec-label">Clause analysis</div>
+          <div id="flagsContent"></div>
+        </div>
+
+        <div class="tab-content" id="tab-qa">
+          <div class="sec-label">Ask anything about this document</div>
+          <div class="qa-row">
+            <input class="qa-input" id="qaInput" placeholder="Can they fire me without notice?" onkeydown="if(event.key==='Enter')askQ()"/>
+            <button class="qa-btn" onclick="askQ()">Ask →</button>
+          </div>
+          <div class="chips">
+            <button class="chip" onclick="qkAsk('What are my key obligations?')">My obligations</button>
+            <button class="chip" onclick="qkAsk('What penalties can I face?')">Penalties</button>
+            <button class="chip" onclick="qkAsk('What rights do I have?')">My rights</button>
+            <button class="chip" onclick="qkAsk('What should I negotiate?')">Negotiate tips</button>
+            <button class="chip" onclick="qkAsk('Can they change terms without my consent?')">Term changes</button>
+          </div>
+          <div class="qa-answers" id="qaAnswers"></div>
+        </div>
+
+        <div class="card-footer">
+          <p>Not a substitute for professional legal advice</p>
+          <button class="btn-ghost" onclick="goHome()">Analyse another →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY CARD -->
+    <div class="card hidden" id="historyCard">
+      <div class="card-header">
+        <div class="card-icon">🕐</div>
+        <div><h2>Past analyses</h2><p>Your document history</p></div>
+      </div>
+      <div class="card-body">
+        <div id="historyContent"></div>
+        <div style="margin-top:14px;">
+          <button class="btn-ghost" onclick="goHome()">← Back to analyser</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+</div><!-- /page-app -->
+
+<!-- ━━━━━━━━━━━━━━ PAYWALL MODAL ━━━━━━━━━━━━━━ -->
+<div class="overlay hidden" id="paywallOverlay">
+  <div class="paywall-box">
+    <div class="pw-icon">⚖️</div>
+    <h2>Free analyses used up</h2>
+    <p>Choose a plan to continue — instant access, no lawyer needed.</p>
+
+    <div class="plan-grid">
+      <div class="plan-card sel" id="plan-single" onclick="selPlan('single')">
+        <div class="pname">Single</div>
+        <div class="pprice"><sup>₹</sup>49</div>
+        <div class="pdesc">One document</div>
+      </div>
+      <div class="plan-card pop" id="plan-monthly" onclick="selPlan('monthly')">
+        <div class="pname">Monthly</div>
+        <div class="pprice"><sup>₹</sup>199</div>
+        <div class="pdesc">Unlimited 30 days</div>
+      </div>
+    </div>
+
+    <ul class="pw-features">
+      <li><span class="fcheck">✓</span>Plain language summary</li>
+      <li><span class="fcheck">✓</span>Red flag detection</li>
+      <li><span class="fcheck">✓</span>Unlimited document Q&amp;A</li>
+      <li><span class="fcheck">✓</span>Tamil, Hindi, Telugu &amp; English</li>
+      <li><span class="fcheck">✓</span>Full document history</li>
+    </ul>
+
+    <button class="pay-btn" id="payBtn" onclick="startPayment()">Pay ₹49 &amp; Continue →</button>
+    <div class="pw-note">Secured by Razorpay · UPI, Cards, Net Banking<br/><a onclick="closePaywall()">Maybe later</a></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast hidden" id="toast"></div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  CONFIG — change API_BASE to your Railway/Render URL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const API_BASE = 'https://vakilai-backend-production.up.railway.app'; // e.g. https://vakilai-backend.railway.app
+const RZP_KEY  = 'rzp_test_REPLACE';          // Razorpay publishable key (safe to expose)
+
+// ── STATE ────────────────────────────────────────────
+let token = localStorage.getItem('vk_token') || '';
+let currentUser = null;
+let docText = '', lang = 'English', docType = 'auto';
+let selPlanKey = 'single';
+const plans = { single:{amount:4900,label:'₹49'}, monthly:{amount:19900,label:'₹199'} };
+
+// ── INIT ─────────────────────────────────────────────
+(async function init() {
+  if (token) {
+    const u = await apiFetch('/api/auth/me');
+    if (u?.user) { currentUser = u.user; showApp(); }
+    else { token = ''; localStorage.removeItem('vk_token'); }
+  }
+})();
+
+// ── PAGE ROUTING ─────────────────────────────────────
+function showApp() {
+  document.getElementById('page-auth').classList.remove('active');
+  document.getElementById('page-app').classList.add('active');
+  document.getElementById('nav-name').textContent = currentUser.name.split(' ')[0];
+  const pb = document.getElementById('nav-plan');
+  pb.textContent = currentUser.plan === 'free' ? 'Free' : currentUser.plan === 'monthly' ? 'Monthly' : 'Premium';
+  pb.className = 'plan-badge ' + currentUser.plan;
+  renderUsageBar();
+}
+
+function logout() {
+  token = ''; currentUser = null;
+  localStorage.removeItem('vk_token');
+  document.getElementById('page-app').classList.remove('active');
+  document.getElementById('page-auth').classList.add('active');
+}
+
+function goHome() {
+  document.getElementById('inputCard').classList.remove('hidden');
+  document.getElementById('resultsCard').classList.add('hidden');
+  document.getElementById('historyCard').classList.add('hidden');
+}
+
+// ── AUTH ─────────────────────────────────────────────
+function switchAuth(mode) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', ['login','register'][i]===mode));
+  document.getElementById('form-login').classList.toggle('hidden', mode!=='login');
+  document.getElementById('form-register').classList.toggle('hidden', mode!=='register');
+  hideAuthError();
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.classList.remove('hidden');
+}
+function hideAuthError() { document.getElementById('auth-error').classList.add('hidden'); }
+
+async function doLogin() {
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  hideAuthError();
+  const res = await apiFetch('/api/auth/login', 'POST', {
+    email: document.getElementById('login-email').value.trim(),
+    password: document.getElementById('login-pwd').value
+  });
+  btn.disabled = false; btn.textContent = 'Sign in';
+  if (res?.token) {
+    token = res.token; currentUser = res.user;
+    localStorage.setItem('vk_token', token);
+    showApp();
+  } else {
+    showAuthError(res?.error || 'Login failed. Try again.');
+  }
+}
+
+async function doRegister() {
+  const btn = document.getElementById('reg-btn');
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  hideAuthError();
+  const res = await apiFetch('/api/auth/register', 'POST', {
+    name:     document.getElementById('reg-name').value.trim(),
+    email:    document.getElementById('reg-email').value.trim(),
+    password: document.getElementById('reg-pwd').value
+  });
+  btn.disabled = false; btn.textContent = 'Create free account';
+  if (res?.token) {
+    token = res.token; currentUser = res.user;
+    localStorage.setItem('vk_token', token);
+    showApp();
+  } else {
+    showAuthError(res?.error || 'Registration failed. Try again.');
+  }
+}
+
+// ── USAGE BAR ─────────────────────────────────────────
+function renderUsageBar() {
+  if (!currentUser) return;
+  const bar = document.getElementById('usageBar');
+  const FREE_LIMIT = 3;
+  if (currentUser.plan !== 'free') {
+    bar.innerHTML = `<div style="display:flex;align-items:center;gap:8px;"><span style="color:var(--safe);font-size:13px;">✓</span><span style="font-size:13px;color:var(--muted)"><strong style="color:var(--parchment);">Unlimited access</strong> — ${currentUser.plan} plan active</span></div>`;
+    return;
+  }
+  const used = currentUser.free_uses_today || 0;
+  const left = Math.max(0, FREE_LIMIT - used);
+  const dots = Array.from({length:FREE_LIMIT},(_,i)=>
+    `<div class="u-dot${i<used?' used':''}"></div>`).join('');
+  bar.innerHTML = `
+    <div style="display:flex;align-items:center;">
+      <div class="usage-dots">${dots}</div>
+      <span class="usage-text" style="margin-left:10px;"><strong>${left} free ${left===1?'analysis':'analyses'}</strong> remaining today</span>
+    </div>
+    ${left===0?`<button class="upgrade-link" onclick="showPaywall()">Upgrade →</button>`:''}`;
+}
+
+// ── OPTIONS ───────────────────────────────────────────
+function setOpt(key, val, btn) {
+  if (key==='lang') lang=val; else docType=val;
+  btn.parentElement.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── FILE UPLOAD ───────────────────────────────────────
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const f=e.target.files[0]; if(!f) return;
+  setFileChip(f.name);
+  const fr=new FileReader(); fr.onload=r=>{docText=r.target.result;}; fr.readAsText(f);
+});
+const dz=document.getElementById('dropZone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{
+  e.preventDefault();dz.classList.remove('drag');
+  const f=e.dataTransfer.files[0]; if(!f) return;
+  setFileChip(f.name);
+  const fr=new FileReader(); fr.onload=r=>{docText=r.target.result;}; fr.readAsText(f);
+});
+function setFileChip(name) {
+  const c=document.getElementById('fileChip');
+  c.innerHTML='📄 &nbsp;'+name; c.className='file-chip';
+}
+
+// ── ANALYSE ───────────────────────────────────────────
+async function analyzeDoc() {
+  const pasted=document.getElementById('docText').value.trim();
+  const text=pasted||docText;
+  if (!text) { alert('Please paste your document or upload a file first.'); return; }
+  docText=text;
+
+  // Check quota before calling
+  if (currentUser.plan==='free' && (currentUser.free_uses_today||0)>=3) {
+    showPaywall(); return;
+  }
+
+  const btn=document.getElementById('analyzeBtn');
+  btn.disabled=true; btn.textContent='Analysing…';
+  document.getElementById('inputCard').classList.add('hidden');
+  document.getElementById('resultsCard').classList.remove('hidden');
+  document.getElementById('summaryContent').innerHTML=loadHtml('Simplifying document');
+  document.getElementById('flagsContent').innerHTML=loadHtml('Scanning for risky clauses');
+
+  const res=await apiFetch('/api/analyse','POST',{text,lang,docType});
+
+  if (res?.code==='UPGRADE_REQUIRED') {
+    document.getElementById('inputCard').classList.remove('hidden');
+    document.getElementById('resultsCard').classList.add('hidden');
+    btn.disabled=false; btn.textContent='Analyse Document';
+    showPaywall(); return;
+  }
+
+  if (res?.result) {
+    renderResults(res.result);
+    // Update local free use count
+    if (currentUser.plan==='free') {
+      currentUser.free_uses_today=(currentUser.free_uses_today||0)+1;
+      renderUsageBar();
+    }
+  } else {
+    document.getElementById('summaryContent').innerHTML='<p style="color:var(--danger);font-size:14px;padding:8px 0;">Analysis failed. Please try again.</p>';
+    document.getElementById('flagsContent').innerHTML='';
+  }
+  btn.disabled=false; btn.textContent='Analyse Document';
+}
+
+function renderResults(r) {
+  document.getElementById('docTypeLabel').textContent=r.docType||'Document Analysis';
+  const icons={safe:'✓',risky:'⚠',danger:'✕'};
+  const labels={safe:'Generally safe to sign',risky:'Review carefully before signing',danger:'Significant concerns — consult a lawyer'};
+  document.getElementById('verdictBox').innerHTML=`
+    <div class="verdict ${r.verdict}">
+      <div class="v-icon">${icons[r.verdict]}</div>
+      <div><div class="v-title">${labels[r.verdict]}</div><div class="v-sub">${r.verdictText}</div></div>
+    </div>`;
+  document.getElementById('summaryContent').innerHTML=(r.summary||[]).map(s=>`
+    <div class="summary-card"><h3>${s.title}</h3><p>${s.text}</p></div>`).join('');
+  document.getElementById('flagsContent').innerHTML=(r.flags||[]).map(f=>`
+    <div class="flag-item ${f.type}">
+      <div class="flag-bar ${f.type}"></div>
+      <div><div class="flag-label">${f.label}</div><div class="flag-text">${f.text}</div></div>
+    </div>`).join('');
+}
+
+// ── Q&A ───────────────────────────────────────────────
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['summary','flags','qa'][i]===name));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+async function askQ() {
+  const inp=document.getElementById('qaInput');
+  const q=inp.value.trim(); if(!q||!docText) return;
+  inp.value=''; showTab('qa');
+  const id='a'+Date.now();
+  const answers=document.getElementById('qaAnswers');
+  answers.innerHTML=`<div class="qa-item" id="${id}"><div class="qa-q">${q}</div>${loadHtml('Thinking')}</div>`+answers.innerHTML;
+  const res=await apiFetch('/api/ask','POST',{text:docText,question:q,lang});
+  document.getElementById(id).innerHTML=`<div class="qa-q">${q}</div><div class="qa-a">${res?.answer||'Could not get answer.'}</div>`;
+}
+function qkAsk(q){document.getElementById('qaInput').value=q;askQ();}
+
+// ── HISTORY ───────────────────────────────────────────
+async function showHistory() {
+  document.getElementById('inputCard').classList.add('hidden');
+  document.getElementById('resultsCard').classList.add('hidden');
+  document.getElementById('historyCard').classList.remove('hidden');
+  document.getElementById('historyContent').innerHTML=loadHtml('Loading history');
+  const res=await apiFetch('/api/history');
+  if (!res?.history?.length) {
+    document.getElementById('historyContent').innerHTML='<p style="color:var(--muted);font-size:14px;">No analyses yet. Analyse your first document!</p>';
+    return;
+  }
+  document.getElementById('historyContent').innerHTML=res.history.map(h=>`
+    <div class="hist-item">
+      <div class="hist-verdict ${h.verdict}"></div>
+      <div style="flex:1;min-width:0;">
+        <div class="hist-type">${h.doc_type||'Document'}</div>
+        <div class="hist-snippet">${h.text_snippet||'—'}</div>
+      </div>
+      <div class="hist-date">${new Date(h.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+    </div>`).join('');
+}
+
+// ── PAYWALL ───────────────────────────────────────────
+function selPlan(p) {
+  selPlanKey=p;
+  document.querySelectorAll('.plan-card').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('plan-'+p).classList.add('sel');
+  document.getElementById('payBtn').innerHTML=`Pay ${plans[p].label} &amp; Continue →`;
+}
+function showPaywall(){document.getElementById('paywallOverlay').classList.remove('hidden');}
+function closePaywall(){document.getElementById('paywallOverlay').classList.add('hidden');}
+
+async function startPayment() {
+  // Create order on backend
+  const orderRes=await apiFetch('/api/payment/create-order','POST',{plan:selPlanKey});
+  if (!orderRes?.orderId) { showToast('Could not initiate payment. Try again.','error'); return; }
+
+  const options={
+    key: orderRes.key||RZP_KEY,
+    amount: orderRes.amount,
+    currency: 'INR',
+    name: 'VakilAI',
+    description: selPlanKey==='monthly'?'Monthly Unlimited · ₹199':'Single Analysis · ₹49',
+    order_id: orderRes.orderId,
+    theme: {color:'#C9A84C'},
+    handler: async function(response) {
+      const verifyRes=await apiFetch('/api/payment/verify','POST',{
+        razorpay_order_id: response.razorpay_order_id,
+        razorpay_payment_id: response.razorpay_payment_id,
+        razorpay_signature: response.razorpay_signature,
+        plan: selPlanKey
+      });
+      if (verifyRes?.success) {
+        currentUser.plan=selPlanKey==='monthly'?'monthly':'paid_single';
+        closePaywall(); renderUsageBar();
+        const pb=document.getElementById('nav-plan');
+        pb.textContent=selPlanKey==='monthly'?'Monthly':'Premium';
+        pb.className='plan-badge '+(selPlanKey==='monthly'?'monthly':'paid_single');
+        showToast('✓ Payment successful — enjoy your access!');
+      }
+    },
+    modal:{ondismiss:function(){}}
+  };
+
+  if (RZP_KEY==='rzp_test_REPLACE') { demoPayment(); return; }
+  try { new Razorpay(options).open(); } catch { demoPayment(); }
+}
+
+function demoPayment() {
+  closePaywall();
+  const el=document.createElement('div');
+  el.className='overlay';
+  el.innerHTML=`<div class="paywall-box" style="max-width:360px;">
+    <div class="pw-icon">🔒</div>
+    <h2 style="font-size:22px;">Demo Mode</h2>
+    <p>In production, Razorpay checkout opens here.<br/>Replace <code style="color:var(--gold);font-size:12px;">RZP_KEY</code> and deploy the backend.</p>
+    <button class="pay-btn" onclick="this.closest('.overlay').remove();onPaySuccess();">Simulate Payment →</button>
+    <div class="pw-note"><a onclick="this.closest('.overlay').remove()">Cancel</a></div>
+  </div>`;
+  document.body.appendChild(el);
+}
+
+function onPaySuccess() {
+  currentUser.plan='paid_single';
+  renderUsageBar();
+  const pb=document.getElementById('nav-plan');
+  pb.textContent='Premium'; pb.className='plan-badge paid_single';
+  showToast('✓ Payment successful — enjoy your access!');
+}
+
+// ── HELPERS ───────────────────────────────────────────
+function loadHtml(msg) {
+  return `<div class="loading">${msg}<div class="dots"><span></span><span></span><span></span></div></div>`;
+}
+
+function showToast(msg,type='success') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast'+(type==='error'?' danger':'');
+  setTimeout(()=>t.className='toast hidden',3500);
+}
+
+async function apiFetch(path, method='GET', body=null) {
+  try {
+    const opts={method,headers:{'Content-Type':'application/json'}};
+    if (token) opts.headers['Authorization']='Bearer '+token;
+    if (body) opts.body=JSON.stringify(body);
+    const res=await fetch(API_BASE+path,opts);
+    return await res.json();
+  } catch(e) {
+    console.error('API error',path,e);
+    return null;
+  }
+}
+</script>
+</body>
+</html>
